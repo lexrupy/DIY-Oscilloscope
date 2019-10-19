@@ -16,31 +16,74 @@
 
 */
 
-//#define DEBUG
 
 #include <Keypad.h>
-#ifndef DEBUG
 #include <Keyboard.h>
-#endif
 
 // This is a Virtual Size to get at least 22 Buttons
 const byte ROWS = 4; //four rows
 const byte COLS = 6; //six columns
 
-char run_key = 'r';
-char mode_key = 'm';
+// GENERAL CONTROLS
+char GEN__NOT_USED__KEY = '$';
+char GEN__RUN_STOP__KEY = 'r';
+char GEN_SWTCH_MODE_KEY = 'm';
+char GEN_SAMPLE_INC_KEY = 'q';
+char GEN_SAMPLE_DEC_KEY = 'a';
 
-char ch1_volts_auto_key = '7';
-char ch2_volts_auto_key = '8';
-char ch1_auto_key = '5';
-char ch2_auto_key = '6';
+//GRAPH CONTROLS
+char GRAPH_ZI_YAXIS_KEY = KEY_UP_ARROW;
+char GRAPH_ZO_YAXIS_KEY = KEY_DOWN_ARROW;
+char GRAPH_ZI_XAXIS_KEY = KEY_LEFT_ARROW;
+char GRAPH_ZO_XAXIS_KEY = KEY_RIGHT_ARROW;
+char GRAPH_SWHD_MEN_KEY = ' ';
+char GRAPH_WAV_FITY_KEY = 'f';
+
+// CHANNEL 1 CONTROLS
+char CH1_EN_DISABLE_KEY = '1';
+char CH1_SW_INPUT_V_KEY = '7';
+char CH1_SW_INPUT_P_KEY = '8';
+char CH1_AUTO_VOLTS_KEY = '5';
+char CH1_SW_ACDDOFF_KEY = 'z';
+char CH1_SH_SAMPLES_KEY = 'x';
+char CH1_SWHD_STATS_KEY = 'c';
+char CH1_MOVE_YA_UP_KEY = 'i';
+char CH1_MOVE_Y_DWN_KEY = 'k';
+
+// CHANNEL 2 CONTROLS
+char CH2_EN_DISABLE_KEY = '2';
+char CH2_SW_INPUT_V_KEY = '9';
+char CH2_SW_INPUT_P_KEY = '0';
+char CH2_AUTO_VOLTS_KEY = '6';
+char CH2_SW_ACDDOFF_KEY = 'v';
+char CH2_SH_SAMPLES_KEY = 'b';
+char CH2_SWHD_STATS_KEY = 'n';
+char CH2_MOVE_YA_UP_KEY = 'o';
+char CH2_MOVE_Y_DWN_KEY = 'l';
+
+
+//TRIGGER CONTROLS
+char TRIG_SWTC_CHAN_KEY = 't';
+char TRIG_SWTC_SLPE_KEY = 's';
+char TRIG_SWTC_MODE_KEY = 'g';
+char TRIG_LEVEL_UP__KEY = 'y';
+char TRIG_LEVEL_DN__KEY = 'h';
+
+
+//HOLD CONTROLS
+char CH1_VOLTS_AUTO_KEY = CH1_SW_INPUT_V_KEY;
+char CH2_VOLTS_AUTO_KEY = CH2_SW_INPUT_V_KEY;
+// KEY USED TO SEND AN "ENTER/RETURN" KEY/COMMAND
+char GEN_SEND_ENTER_KEY = GEN__RUN_STOP__KEY;
+// KEY USED TO SEND AN "ESCAPE" KEY/COMMAND
+char GEN_SEND_ESCAP_KEY = GEN_SWTCH_MODE_KEY;
 
 // DEFINE THE SYMBOLS/KEYSTROKES TO BE SENT WITH KEYBOARD
 char hexaKeys[ROWS][COLS] = {
-  {'t','$','s',mode_key,' ','g'},
-  {'2','b','v','n','0','9'},
-  {'$','a','f',run_key,'q','$'},
-  {'1','x','z','c','8','7'},
+  {TRIG_SWTC_CHAN_KEY, GEN__NOT_USED__KEY, TRIG_SWTC_SLPE_KEY, GEN_SWTCH_MODE_KEY, GRAPH_SWHD_MEN_KEY, TRIG_SWTC_MODE_KEY},
+  {CH2_EN_DISABLE_KEY, CH2_SH_SAMPLES_KEY, CH2_SW_ACDDOFF_KEY, CH2_SWHD_STATS_KEY, CH2_SW_INPUT_P_KEY, CH2_SW_INPUT_V_KEY},
+  {GEN__NOT_USED__KEY, GEN_SAMPLE_DEC_KEY, GRAPH_WAV_FITY_KEY, GEN__RUN_STOP__KEY, GEN_SAMPLE_INC_KEY, GEN__NOT_USED__KEY},
+  {CH1_EN_DISABLE_KEY, CH1_SH_SAMPLES_KEY, CH1_SW_ACDDOFF_KEY, CH1_SWHD_STATS_KEY, CH1_SW_INPUT_P_KEY, CH1_SW_INPUT_V_KEY},
 };
 
 byte rowPins[ROWS] = {6, 5, 4, 0}; //connect to the row pinouts of the keypad
@@ -60,30 +103,34 @@ short potDelayLow  = 50;
 short potDelayHigh = 500;
 
 // POT CONFIG
+// MINUS AND PLUS ARE DEADZONE CONFIGURATION FOR YOUR POTS
+// YOU WILL NEED TO CALIBRATE YOURS.
+// TO CALIBRATE CREATE YOUR OWN SKETCH AND USE analogRead() TO SEE THE UPPER AND LOWER VALUE OF YOUR POT
+// THEN YOUR CAN SEE THE VALUE AND ASSUME YOUR OWN VALUES FOR MINUS AND PLUS VALUES.
+// ANY READ BELOW MINUS WILL SEND THE THE "LEFT" COMMAND AND ABOVE PLUS WILL SENT THE "RIGHT" COMMAND
 
+// DEADZONE CONFIG FOR X AXIS ZOOM
 short x_axis_potMinus = 575;
 short x_axis_potPlus  = 895;
 short x_axis_potMid   = (x_axis_potMinus + x_axis_potPlus) / 2;
 
-
-
+// DEADZONE CONFIG FOR Y AXIS ZOOM
 short y_axis_potMinus = 610;
 short y_axis_potPlus  = 902;
 short y_axis_potMid   = (y_axis_potMinus + y_axis_potPlus) / 2;
 
-
-
+// DEADZONE CONFIG FOR CH1 POSITION
 short ch1_potMinus = 690;
 short ch1_potPlus  = 925;
 short ch1_potMid   = (ch1_potMinus + ch1_potPlus) / 2;
 
-
+// DEADZONE CONFIG FOR CH2 POSITION
 short ch2_potMinus = 266;
 short ch2_potPlus  = 725;
 short ch2_potMid   = (ch2_potMinus + ch2_potPlus) / 2;
 
 
-
+// DEADZONE CONFIG FOR TRIGGER LEVEL POSITION
 short trg_potMinus = 320;
 short trg_potPlus  = 760;
 short trg_potMid   = (trg_potMinus + trg_potPlus) / 2;
@@ -108,18 +155,11 @@ bool ch2_volts_auto_hold_state = false;
 bool run_hold_state = false;
 bool mode_hold_state = false;
 
-
-
 //initialize an instance of class NewKeypad
 Keypad scopeKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS); 
 
 void setup(){
-  #ifdef DEBUG
-  Serial.begin(9600);
-  #endif
-  #ifndef DEBUG
   Keyboard.begin();
-  #endif
   
   // ADJUST THE DEBOUNCE TIME FOR THE TYPE OF BUTTONS
   scopeKeypad.setDebounceTime(50);
@@ -130,37 +170,46 @@ void setup(){
 }
   
 void loop(){
+  // READ KEYPAD
   char key = scopeKeypad.getKey();
+  
+  // DEPENDING ON POLARITY OF CONNECTION FOR YOUR POTENTIOMETER YOU MAY NEED TO SWAP KEY POSITION
   // READ POTENTIOMETERS AND SEND THE KEYSTROKES
-  #ifndef DEBUG
-  readPot(&x_axisPin, &x_axis_ms, &x_axis_send, KEY_RIGHT_ARROW, KEY_LEFT_ARROW, x_axis_potMid, x_axis_potMinus, x_axis_potPlus);
-  readPot(&y_axisPin, &y_axis_ms, &y_axis_send, KEY_UP_ARROW, KEY_DOWN_ARROW, y_axis_potMid, y_axis_potMinus, y_axis_potPlus);
-  #endif
-  #ifdef DEBUG
-  readPot(&x_axisPin, &x_axis_ms, &x_axis_send, '>', '<', x_axis_potMid, x_axis_potMinus, x_axis_potPlus);
-  readPot(&y_axisPin, &y_axis_ms, &y_axis_send, '+', '-', y_axis_potMid, y_axis_potMinus, y_axis_potPlus);  
-  #endif
-  readPot(&ch1_posPin, &ch1_pos_ms, &ch1_pos_send, 'i', 'k', ch1_potMid, ch1_potMinus, ch1_potPlus);
-  readPot(&ch2_posPin, &ch2_pos_ms, &ch2_pos_send, 'o', 'l', ch2_potMid, ch2_potMinus, ch2_potPlus);
-  readPot(&trg_lvlPin, &trg_lvl_ms, &trg_lvl_send, 'y', 'h', trg_potMid, trg_potMinus, trg_potPlus);
-  // Serial.println();
+
+  // READ POT FOR X AXIS ZOOM
+  readPot(&x_axisPin, &x_axis_ms, &x_axis_send, GRAPH_ZO_XAXIS_KEY, GRAPH_ZI_XAXIS_KEY, x_axis_potMid, x_axis_potMinus, x_axis_potPlus);
+  
+  // READ POT FOR Y AXIS ZOOM
+  readPot(&y_axisPin, &y_axis_ms, &y_axis_send, GRAPH_ZI_YAXIS_KEY, GRAPH_ZO_YAXIS_KEY, y_axis_potMid, y_axis_potMinus, y_axis_potPlus);
+  
+  // READ POT FOR MOVE CHANNEL 1 POSITION UP AND DOWN ON SCREEN
+  readPot(&ch1_posPin, &ch1_pos_ms, &ch1_pos_send, CH1_MOVE_YA_UP_KEY, CH1_MOVE_Y_DWN_KEY, ch1_potMid, ch1_potMinus, ch1_potPlus);
+  
+  // READ POT FOR MOVE CHANNEL 2 POSITION UP AND DOWN ON SCREEN
+  readPot(&ch2_posPin, &ch2_pos_ms, &ch2_pos_send, CH2_MOVE_YA_UP_KEY, CH2_MOVE_Y_DWN_KEY, ch2_potMid, ch2_potMinus, ch2_potPlus);
+  
+  // READ POT FOR MOVE TRIGGER LEVEL POSITION UP AND DOWN ON SCREEN
+  readPot(&trg_lvlPin, &trg_lvl_ms, &trg_lvl_send, TRIG_LEVEL_UP__KEY, TRIG_LEVEL_DN__KEY, trg_potMid, trg_potMinus, trg_potPlus);
+  
 }
 
 
 void readPot(short *pin, unsigned long *timer, bool *vsend, char valLeft, char valRight, short mid, short minus, short plus) {
   unsigned long ms = millis();
+  // FIRST ASSUME THE INITIAL VALUE AS OF MIDPOINT
   int val = mid;
   bool up = false;
-  int pinVal    = analogRead(*pin);
-//  Serial.print(pinVal);
-//  Serial.print("  -  ");
+  // READ THE ANALOG INPUT
+  int pinVal = analogRead(*pin);
+  // IF VALUE IS BELOW MINUS DEADZONE, PREPARE FOR "LEFT" COMAND
   if (pinVal <= minus ) {
     val = map(pinVal, potLow, minus, potDelayLow, potDelayHigh);
+  // ELSE IF VALUE IS ABOVE PLUS DEADZONE, PREPARE FOR "RIGHT" COMMAND
   } else if (pinVal >= plus) {
     val = map(pinVal, potHigh, plus, potDelayLow, potDelayHigh);
     up = true;
   }
-
+  // CALCULATE THE KEYPRESS SPEED AND SEND THE KEY ASSOCIATED WITH "UP" OR "DOWN" COMMAND
   if (val != mid) {
     if ((ms - *timer) >= val ) {
       *timer = ms;
@@ -170,20 +219,11 @@ void readPot(short *pin, unsigned long *timer, bool *vsend, char valLeft, char v
         *vsend = true;
       }
       if (*vsend) {
+        // SEND THE "RIGHT" COMMAND IF POT IS IN UP POSITION, OTHERWISE SEND THE "LEFT" COMMAND
         if (up) {
-          #ifndef DEBUG
           Keyboard.write(valRight);
-          #endif
-          #ifdef DEBUG
-          Serial.println(valRight);
-          #endif
         } else {
-          #ifndef DEBUG
           Keyboard.write(valLeft);
-          #endif
-          #ifdef DEBUG
-          Serial.println(valLeft);
-          #endif
         }
       }
     }
@@ -194,18 +234,7 @@ void readPot(short *pin, unsigned long *timer, bool *vsend, char valLeft, char v
 }
 
 void sendKey(char key) {
-  #ifndef DEBUG
   Keyboard.write(key);
-  #endif
-  #ifdef DEBUG
-  if (key == KEY_RETURN) {
-    Serial.println("[RETURN]");
-  } else if (key == KEY_ESC) {
-    Serial.println("[ESC]");
-  } else {
-    Serial.println(key);
-  }
-  #endif
 }
 
 // Taking care of some special events.
@@ -217,81 +246,56 @@ void keypadEvent(KeypadEvent key){
         // SPECIAL FUNCTION FOR KEY VOLTS/AUTO ON CHANNELS NEED TO BE EVALUATED
         // IF BUTTON IS HOLD EXECUTE AUTO FUNCTION, ELSE
         // EXECUTE VOLTS FUNCTION
-        if (key == ch1_volts_auto_key) {
+        if (key == CH1_VOLTS_AUTO_KEY) {
           if (ch1_volts_auto_hold_state) {
             ch1_volts_auto_hold_state = false;
           } else {
             // IF THE BUTTON WAS NOT HOLD, JUST SEND THE VOLTS KEYSTROKE
-            #ifndef DEBUG
             Keyboard.write(key);
-            #endif
-            #ifdef DEBUG
-            Serial.println(key);
-            #endif
           }
-        } else if (key == run_key) {
+        } else if (key == GEN__RUN_STOP__KEY) {
           if (run_hold_state) {
             run_hold_state = false;
           } else {
-            #ifndef DEBUG
             Keyboard.write(key);
-            #endif
-            #ifdef DEBUG
-            Serial.println(key);
-            #endif
           }
-        }  else if (key == mode_key) {
+        }  else if (key == GEN_SWTCH_MODE_KEY) {
           if (mode_hold_state) {
             mode_hold_state = false;
           } else {
-            #ifndef DEBUG
             Keyboard.write(key);
-            #endif
-            #ifdef DEBUG
-            Serial.println(key);
-            #endif
           }
-        } else if (key == ch2_volts_auto_key) {
+        } else if (key == CH2_VOLTS_AUTO_KEY) {
           if (ch2_volts_auto_hold_state) {
             ch2_volts_auto_hold_state = false;
           } else {
             // IF THE BUTTON WAS NOT HOLD, JUST SEND THE VOLTS KEYSTROKE
-            #ifndef DEBUG
             Keyboard.write(key);
-            #endif
-            #ifdef DEBUG
-            Serial.println(key);
-            #endif
           }
         } else {
           // SEND THE PRESSED KEY
-          #ifndef DEBUG
           Keyboard.write(key);
-          #endif
-          #ifdef DEBUG
-          Serial.println(key);
-          #endif
         }
         break;
     case HOLD:
-        if (key == ch1_volts_auto_key) {
+        if (key == CH1_VOLTS_AUTO_KEY) {
             // CHECK CURRENT HOLD STATE FOR CHANNEL 1 VOLTS/AUTO
             if (!ch1_volts_auto_hold_state) {
               // IF WAS NOT HOLD, SEND AUTO COMMAND
-              sendKey(ch1_auto_key);
+              sendKey(CH1_AUTO_VOLTS_KEY);
               // SET HOLD STATE
               ch1_volts_auto_hold_state = true;
             }
         }
-        if (key == ch2_volts_auto_key) {
+        if (key == CH2_VOLTS_AUTO_KEY) {
             if (!ch2_volts_auto_hold_state) {
               // IF WAS NOT HOLD, SEND AUTO COMMAND
-              sendKey(ch2_auto_key);
+              sendKey(CH2_AUTO_VOLTS_KEY);
               // SET HOLD STATE
               ch2_volts_auto_hold_state = true;
             }
         }
-        if (key == run_key) {
+        if (key == GEN_SEND_ENTER_KEY) {
             if (!run_hold_state) {
               // IF WAS NOT HOLD, SEND AUTO COMMAND
               sendKey(KEY_RETURN);
@@ -299,7 +303,7 @@ void keypadEvent(KeypadEvent key){
               run_hold_state = true;
             }
         }
-        if (key == mode_key) {
+        if (key == GEN_SEND_ESCAP_KEY) {
             if (!mode_hold_state) {
               // IF WAS NOT HOLD, SEND AUTO COMMAND
               sendKey(KEY_ESC);
